@@ -76,7 +76,7 @@ Vitamin D (25-OH): 32 ng/mL (Ref: 30 - 100)`,
   },
 ];
 
-// cache-bust 
+console.log('build-v2');
 export default function App() {
   const [reportText, setReportText] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(
