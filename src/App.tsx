@@ -580,6 +580,7 @@ export default function App() {
         if (!candidate) continue;
         try {
           const clean = candidate
+            .replace(/<think>[\s\S]*?<\/think>/gi, '')
             .replace(/```json/gi, '')
             .replace(/```/g, '')
             .trim();
