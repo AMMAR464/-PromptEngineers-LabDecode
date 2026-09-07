@@ -430,7 +430,49 @@ export default function App() {
     };
   };
 
-  const fallbackClientParser = (inputText: string): AnalysisReport => {
+ const repairJsonBrackets = (jsonStr: string): string => {
+  let result = jsonStr.trim();
+  const stack: string[] = [];
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < result.length; i++) {
+    const ch = result[i];
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escapeNext = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (ch === '{' || ch === '[') {
+      stack.push(ch);
+    } else if (ch === '}' || ch === ']') {
+      const expected = ch === '}' ? '{' : '[';
+      if (stack.length > 0 && stack[stack.length - 1] === expected) {
+        stack.pop();
+      } else if (stack.length > 0) {
+        const correct = stack[stack.length - 1] === '{' ? '}' : ']';
+        result = result.slice(0, i) + correct + result.slice(i + 1);
+        stack.pop();
+      }
+    }
+  }
+
+  while (stack.length > 0) {
+    const open = stack.pop();
+    result += open === '{' ? '}' : ']';
+  }
+
+  return result;
+}; const fallbackClientParser = (inputText: string): AnalysisReport => {
     const lines = inputText.split('\n');
     const detectedMetrics: Metric[] = [];
 
@@ -594,10 +636,14 @@ export default function App() {
             .replace(/```json/gi, '')
             .replace(/```/g, '')
             .trim();
-          parsed = JSON.parse(clean);
+          try {
+            parsed = JSON.parse(clean);
+          } catch {
+            parsed = JSON.parse(repairJsonBrackets(clean));
+          }
           break;
         } catch {
-          // not JSON, try the next candidate shape
+          // not JSON even after repair attempt, try the next candidate shape
         }
       }
 
