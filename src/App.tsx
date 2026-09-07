@@ -555,14 +555,22 @@ export default function App() {
         body: JSON.stringify(payload),
       });
 
-      const rawJson = await response.json();
+      const rawText = await response.text();
       // Leave this in while you're debugging — open DevTools > Console after
       // an image analysis and inspect this object. It tells you exactly what
       // your n8n workflow sent back, which is the fastest way to see whether
       // the vision model actually read the image or not.
-      console.log('n8n raw response:', rawJson);
+     console.log('n8n raw response:', rawText);
 
       let parsed: any = null;
+      let rawJson: any = null;
+
+      // Try to parse as JSON first (covers the case where n8n DOES wrap it properly)
+      try {
+        rawJson = JSON.parse(rawText);
+      } catch {
+        rawJson = null;
+      }
 
       // Try every response shape common across n8n + Gemini/OpenAI nodes,
       // in addition to the original Gemini `candidates` path.
@@ -574,6 +582,7 @@ export default function App() {
         Array.isArray(rawJson) ? rawJson[0]?.output : undefined,
         Array.isArray(rawJson) ? rawJson[0]?.text : undefined,
         typeof rawJson === 'string' ? rawJson : undefined,
+        rawText,
       ];
 
       for (const candidate of textCandidates) {
